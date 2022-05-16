@@ -1,0 +1,67 @@
+﻿## Interface: 90200
+## Title: |cFF0099FF[工具] |rEzMyUI
+## Notes: 迷你小工具合輯
+## Version: X.0
+
+## 快速刪除
+SpeedDel.lua
+## 專業
+AlreadyKnown.lua
+TradeTabs.lua
+## 報錯蒐集
+BaudErrorFrame.lua
+BaudErrorFrame.xml
+## 施法條+Shift專注目標
+Casting.lua
+## 常用貨幣
+CharsCurrency.lua
+## 框架移動
+DragEmAll.lua
+## 字體放大
+FONT.lua
+## 裝備管理
+iEquip.lua
+DressUp.lua
+## 裝等天賦
+SyDurGlow.lua
+CloudyUnitInfo.lua
+##ilvlSpec.lua
+## 法術ID&施法者
+idTip.lua
+## 拾取框加長
+LovelyLoot.lua
+## 通報整合
+alRaidCD.lua
+##SpecialAnnounce - 複製.lua
+ArenaScreenshot.lua
+## 稀有警報
+rare.lua
+## 斷法通報
+Interrupt.lua
+## 增益監視
+ed_bufftimers.lua
+## 賣灰修裝
+SellRepair.lua
+## 聊天增強+@好友
+wChat.lua
+ChatAtFriends.lua
+## 盜賊敲門
+RogueKnockDoor.lua
+## 任務通報
+##QuestNotifier.lua
+## 成就截圖
+Shooter.lua
+## 血條%數
+PercentNameplates.lua
+## 隱藏圖示+迷霧全開
+TidyMinimap.lua
+##Foglight.lua
+## 地圖座標
+Map.lua
+## 訊息增強
+wIn1.lua
+Tooltip.lua
+
+
+MainMenu.lua
+簡略信息.lua
