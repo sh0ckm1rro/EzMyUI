@@ -1,40 +1,47 @@
 --Currency ±`¥Î³f¹ô
-local F, Currency = CreateFrame("Frame"), {1220,1273,1533}
-   F.icon = {}
-   for i = 1, 6 do
-      local icon = CreateFrame("Frame", nil, UIParent)
-      --icon:SetPoint("BOTTOMRIGHT", _G["Minimap"], "BOTTOMLEFT", 3, 20*i+2*(i-1)-10)
-      icon:SetPoint("TOPRIGHT", _G["Minimap"], "BOTTOMRIGHT", 10, -20*i+2*(i-1)-10)
-      icon:SetSize(16, 16)
-      icon.texture = icon:CreateTexture(nil, "ARTWORK")
-      icon.texture:SetAllPoints(icon)
-      icon.texture:SetTexCoord(.1, .9, .1, .9)
-      icon.text = icon:CreateFontString()
-      icon.text:SetPoint("RIGHT", icon, "LEFT", -1, 0)
-      icon.text:SetFont(STANDARD_TEXT_FONT, 14, "OUTLINE")
-      icon.text:SetShadowOffset(0, 0)
-      icon.text:SetShadowColor(0,0,0,.8)
-      F.icon[i] = icon
-   end
+local token = {1813, 1828, 1820, 1767, 1191}
+local GetCurrencyInfo, select, tip = C_CurrencyInfo.GetCurrencyInfo, select, GameTooltip
+local font = GameTooltipTextLeft1:GetFont()
 
-local GetCurrencyInfo, select, sub = GetCurrencyInfo, select, string.sub
-   for i = 1, #Currency do
-      local label, _, icon = GetCurrencyInfo(Currency[i])
-      F.icon[i].texture:SetTexture(icon)
-      F.icon[i]:SetScript("OnEnter", function()
-         _G["GameTooltip"]:ClearLines()
-         _G["GameTooltip"]:SetOwner(F.icon[i], "ANCHOR_LEFT")
-         _G["GameTooltip"]:AddLine(sub(label, 1, 24))
-         _G["GameTooltip"]:Show()
-      end)
-      F.icon[i]:SetScript("OnLeave", function()
-         _G["GameTooltip"]:Hide()
-      end)
-   end
+local function OnEvent(self)
+	for i = 1, #token do
+		local info = GetCurrencyInfo(token[i])
+		if info.discovered then
+			self[i].text:SetText(info.quantity)
+		else
+			self[i].text:SetText("--")
+		end
+	end
+end
 
-   F:RegisterEvent("CURRENCY_DISPLAY_UPDATE")
-   F:SetScript("OnEvent", function()
-      for i = 1, #Currency do
-         F.icon[i].text:SetText(select(2, GetCurrencyInfo(Currency[i])))
-      end
-   end)
+local tokens = CreateFrame('Frame')
+tokens:RegisterEvent('CURRENCY_DISPLAY_UPDATE')
+tokens:SetScript('OnEvent', OnEvent)
+
+local function OnEnter(self)
+	tip:ClearLines()
+	tip:SetOwner(self, 'ANCHOR_RIGHT')
+	tip:SetHyperlink(self.link)
+	tip:Show()
+end
+
+for i = 1, #token do
+	local id = token[i]
+	local info = GetCurrencyInfo(id)
+	local t = CreateFrame('Frame', nil, Minimap)
+	t:SetPoint('BOTTOMLEFT', UIParent, 'BOTTOMRIGHT', -78, 92+22*(i-1))
+	t:SetSize(16, 16)
+	t.texture = t:CreateTexture(nil, 'ARTWORK')
+	t.texture:SetAllPoints(t)
+	t.texture:SetTexCoord(0.1, 0.9, 0.1, 0.9)
+	t.texture:SetTexture(info.iconFileID)
+	t.text = t:CreateFontString()
+	t.text:SetPoint('LEFT', t, 'RIGHT', 4, 0)
+	t.text:SetFont(font, 16, "OUTLINE")
+	t.text:SetShadowOffset(1, 1)
+	t.text:SetShadowColor(0, 0, 0, 0.4)
+	t.link = '|Hcurrency:'..id
+	t:SetScript('OnEnter', OnEnter)
+	t:SetScript('OnLeave', GameTooltip_Hide)
+	tokens[i] = t
+end
