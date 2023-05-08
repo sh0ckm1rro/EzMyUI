@@ -32,7 +32,10 @@ function BaudErrorFrame_OnLoad(self)
 	end
 	SLASH_BaudErrorFrame1 = "/bauderror"
 	SLASH_BaudErrorFrame2 = "/bef"
-	seterrorhandler(BaudErrorFrameHandler)
+
+	local old_seterrorhandler = seterrorhandler
+	old_seterrorhandler(BaudErrorFrameHandler)
+	seterrorhandler = function() end
 
 	local soundButton = CreateFrame("Frame", nil, BaudErrorFrame)
 	soundButton:SetSize(25, 25)
@@ -96,10 +99,8 @@ function BaudErrorFrameMinimapButton_OnUpdate(self)
 	self:ClearAllPoints()
 	if IsAddOnLoaded("NDui") then
 		self:SetPoint("BOTTOMRIGHT", UIParent)
-	elseif IsAddOnLoaded("KkthnxUI") then
-		self:SetPoint("RIGHT", Minimap, 2, 0)
 	else
-		self:SetPoint("TOPRIGHT", Minimap, "TOPRIGHT", -8, -1)
+		self:SetPoint("TOPRIGHT", Minimap, "TOPRIGHT", 0, 0)
 	end
 end
 
@@ -117,7 +118,7 @@ function BaudErrorFrameShowError(Error)
 end
 
 function BaudErrorFrameAdd(Error, Retrace)
-	if Error:match("script ran too long") then return end
+	if Error:match("script ran too long") and not enableTaint then return end
 
 	for _, Value in pairs(ErrorList) do
 		if Value.Error == Error then
@@ -210,7 +211,12 @@ end
 
 function BaudErrorFrameEditBoxUpdate()
 	if ErrorList[SelectedError] then
-		BaudErrorFrameEditBox.TextShown = colorStack(ErrorList[SelectedError].Error.."\nCount: "..ErrorList[SelectedError].Count.."\n\nCall Stack:\n"..ErrorList[SelectedError].Stack)
+		local errorMsg = ErrorList[SelectedError].Error
+		local errorStr = strmatch(errorMsg, "near '(.*)'")
+		if errorStr and strbyte(errorStr) == 229 then -- fix utf8 str error
+			errorMsg = gsub(errorMsg, "('.*')$", "UTF8 string")
+		end
+		BaudErrorFrameEditBox.TextShown = colorStack(errorMsg.."\nCount: "..ErrorList[SelectedError].Count.."\n\nCall Stack:\n"..ErrorList[SelectedError].Stack)
 	else
 		BaudErrorFrameEditBox.TextShown = ""
 	end
@@ -247,33 +253,14 @@ f:SetScript("OnEvent", function()
 		BaudErrorFrameListScrollBoxHighlightTexture:SetVertexColor(DB.r, DB.g, DB.b, .25)
 		B.CreateBDFrame(BaudErrorFrameDetailScrollBox, .25)
 
+		if DB.isPatch10_1 then
+			B.ReskinTrimScroll(BaudErrorFrameDetailScrollFrame.ScrollBar)
+		else
+			B.ReskinScroll(BaudErrorFrameDetailScrollFrameScrollBar)
+		end
 		B.ReskinScroll(BaudErrorFrameListScrollBoxScrollBarScrollBar)
-		B.ReskinScroll(BaudErrorFrameDetailScrollFrameScrollBar)
 		B.Reskin(BaudErrorFrameClearButton)
 		B.Reskin(BaudErrorFrameCloseButton)
 		B.Reskin(BaudErrorFrameReloadUIButton)
-	end
-
-	if IsAddOnLoaded("KkthnxUI") then
-		local K = unpack(KkthnxUI)
-
-		if K.isDeveloper then
-			RegisterTaintEvents(BaudErrorFrame)
-		end
-
-		K.CreateMoverFrame(BaudErrorFrame)
-		BaudErrorFrame:CreateBorder()
-
-		BaudErrorFrameBackground:SetAlpha(0)
-		BaudErrorFrameDetailScrollBoxBackground:SetAlpha(0)
-		BaudErrorFrameListScrollBoxHighlightTexture:SetVertexColor(K.r, K.g, K.b, .25)
-		BaudErrorFrameDetailScrollBox:StripTextures()
-		BaudErrorFrameDetailScrollBox:CreateBorder()
-		BaudErrorFrameListScrollBoxScrollBarScrollBar:SkinScrollBar()
-		BaudErrorFrameDetailScrollFrameScrollBar:SkinScrollBar()
-
-		BaudErrorFrameClearButton:SkinButton()
-		BaudErrorFrameCloseButton:SkinButton()
-		BaudErrorFrameReloadUIButton:SkinButton()
 	end
 end)
