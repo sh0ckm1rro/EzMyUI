@@ -1,17 +1,18 @@
-﻿--Class color 血條按職業顏色
-local function colour(statusbar, unit ,name)
-    if UnitIsPlayer(unit) and UnitIsConnected(unit) and unit == statusbar.unit and UnitClass(unit) then
-        local _, class = UnitClass(unit)
-	c = CUSTOM_CLASS_COLORS and CUSTOM_CLASS_COLORS[class] or RAID_CLASS_COLORS[class]
-        statusbar:SetStatusBarColor(c.r, c.g, c.b)
-    end
+--Class HP color 頭像血條按職業顏色
+local function colorHPBar(bar, unit)
+	if UnitIsPlayer(unit) and UnitClass(unit) then
+		local color = RAID_CLASS_COLORS[select(2, UnitClass(unit))]
+		bar:SetStatusBarColor(color.r, color.g, color.b)
+		bar:SetStatusBarDesaturated(true)
+	else
+		bar:SetStatusBarColor(0, 0.9, 0.3)			-- defaultColor
+		bar:SetStatusBarDesaturated(false)
+	end
 end
+hooksecurefunc("UnitFrameHealthBar_Update", colorHPBar)
+hooksecurefunc("HealthBar_OnValueChanged", function(self) colorHPBar(self, self.unit) end)
 
-hooksecurefunc("UnitFrameHealthBar_Update", colour)
-hooksecurefunc("HealthBar_OnValueChanged", function(self)
-	colour(self, self.unit)
-end)
-
+--Class ID color 頭像ID按職業顏色
 function SetNameColor(frame)
 	if frame.name and frame.unit then
 		local color = UnitIsPlayer(frame.unit) and RAID_CLASS_COLORS[select(2, UnitClass(frame.unit))] or NORMAL_FONT_COLOR
@@ -24,41 +25,10 @@ hooksecurefunc("UnitFrame_Update", function(self)
 	end
 end)
 
---禁用點擊
-C_NamePlate.SetNamePlateSelfClickThrough(true)
 
-
---施法圖示
-CastingBarFrame.Icon:Show()
-CastingBarFrame.Icon:SetHeight(24) 
-CastingBarFrame.Icon:SetWidth(24)
-
---焦點施法條
-hooksecurefunc(FocusFrameSpellBar, "Show", function()
-   FocusFrameSpellBar:SetScale("2")
-   FocusFrameSpellBar:ClearAllPoints()
-   FocusFrameSpellBar:SetPoint("TOP", UIParent, "TOP", 0, -20)
-   FocusFrameSpellBar.SetPoint = function() end 
-end)
-     
-FocusFrameSpellBar:SetStatusBarColor(0,.45,.9)
-FocusFrameSpellBar.SetStatusBarColor = function() end
-
---目標施法條
-hooksecurefunc(TargetFrameSpellBar, "Show", function()
-   TargetFrameSpellBar:SetScale("2")
-   TargetFrameSpellBar:ClearAllPoints()
-   TargetFrameSpellBar:SetPoint("CENTER", UIParent, "CENTER", 0, -140)
-   TargetFrameSpellBar.SetPoint = function() end
-end)
-
-TargetFrameSpellBar:SetStatusBarColor(.9,.8,1.34)
-TargetFrameSpellBar.SetStatusBarColor = function() end
-
-
--- Focuser v0.51 by slizen
-local modifier = "shift" -- shift, alt or ctrl
-local mouseButton = "1" -- 1 = left, 2 = right, 3 = middle, 4 and 5 = thumb buttons if there are any
+--Focuser
+local modifier = "shift"	--shift, alt 或 ctrl
+local mouseButton = "1"	--1 = 左鍵, 2 = 右鍵, 3 = 中鍵, 4 和 5 = 滑鼠的其他按鍵
 
 local function SetFocusHotkey(frame)
 	frame:SetAttribute(modifier.."-type"..mouseButton, "focus")
@@ -101,7 +71,51 @@ for i, frame in pairs(duf) do
 end
 
 
---射程著色
+--施法時間
+PlayerCastingBarFrame.timer = PlayerCastingBarFrame:CreateFontString(nil)
+PlayerCastingBarFrame.timer:SetFont(STANDARD_TEXT_FONT, 24, "THINOUTLINE")
+PlayerCastingBarFrame.timer:SetPoint("LEFT", PlayerCastingBarFrame, "RIGHT", 10, -5)	--調整位置
+PlayerCastingBarFrame.update = .1
+
+TargetFrameSpellBar.timer = TargetFrameSpellBar:CreateFontString(nil)
+TargetFrameSpellBar.timer:SetFont(STANDARD_TEXT_FONT, 16, "THINOUTLINE")
+TargetFrameSpellBar.timer:SetPoint("LEFT", TargetFrameSpellBar, "RIGHT", 10, -5)
+TargetFrameSpellBar.update = .1
+
+FocusFrameSpellBar.timer = FocusFrameSpellBar:CreateFontString(nil)
+FocusFrameSpellBar.timer:SetFont(STANDARD_TEXT_FONT, 16, "THINOUTLINE")
+FocusFrameSpellBar.timer:SetPoint("LEFT", FocusFrameSpellBar, "RIGHT", 10, -5)
+FocusFrameSpellBar.update = .1
+
+local function PlayerCastingBarFrame_OnUpdate_Hook(self, elapsed)
+	if not self.timer then return end
+	if self.update and self.update < elapsed then
+		if self.casting then
+			self.timer:SetText(format("%.1f", max(self.maxValue - self.value, 0)))
+		elseif self.channeling then
+			self.timer:SetText(format("%.1f", max(self.value, 0)))
+		else
+			self.timer:SetText("")
+		end
+		self.update = .1
+	else
+		self.update = self.update - elapsed
+	end
+end
+PlayerCastingBarFrame:HookScript('OnUpdate', PlayerCastingBarFrame_OnUpdate_Hook)
+TargetFrameSpellBar:HookScript('OnUpdate', PlayerCastingBarFrame_OnUpdate_Hook)
+FocusFrameSpellBar:HookScript('OnUpdate', PlayerCastingBarFrame_OnUpdate_Hook)
+
+
+--目標Buff和Debuff大小
+local buffxy=26
+local debuffxy=32
+
+hooksecurefunc("TargetFrame_UpdateBuffAnchor", function(_, buff) buff:SetSize(buffxy, buffxy) end)
+hooksecurefunc("TargetFrame_UpdateDebuffAnchor", function(_, debuff) debuff:SetSize(debuffxy, debuffxy) end)
+
+
+-- Buttonrange 射程著色
 hooksecurefunc("ActionButton_UpdateRangeIndicator", function(self, checksRange, inRange)
 if self.action == nil then return end
 local isUsable, notEnoughMana = IsUsableAction(self.action)
@@ -112,4 +126,5 @@ local isUsable, notEnoughMana = IsUsableAction(self.action)
 	else
 		_G[self:GetName().."Icon"]:SetVertexColor(1, 1, 1)
 	end
-end)
+end
+)
